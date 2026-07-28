@@ -45,11 +45,22 @@ local DEFAULT_DIFFICULTY = "medium"
 -- Returns the list of lines.
 local function placeBetweenLines(solution)
     local n = 9
+    -- All 8 compass directions -- using only the 4 "forward" ones (right/
+    -- down/both down-diagonals) left corner cells unreachable as a path
+    -- cell (arriving at a corner would require a source with a negative
+    -- row/col), so lines clustered heavily toward the grid's center and
+    -- almost never touched the corner boxes. All 8 directions make every
+    -- cell reachable from some source, spreading lines across the whole
+    -- grid.
     local directions = {
-        { dr = 0, dc = 1  },  -- right
-        { dr = 1, dc = 0  },  -- down
-        { dr = 1, dc = 1  },  -- diag down-right
-        { dr = 1, dc = -1 },  -- diag down-left
+        { dr = 0,  dc = 1  },  -- right
+        { dr = 0,  dc = -1 },  -- left
+        { dr = 1,  dc = 0  },  -- down
+        { dr = -1, dc = 0  },  -- up
+        { dr = 1,  dc = 1  },  -- diag down-right
+        { dr = 1,  dc = -1 },  -- diag down-left
+        { dr = -1, dc = 1  },  -- diag up-right
+        { dr = -1, dc = -1 },  -- diag up-left
     }
 
     local lines     = {}
@@ -57,64 +68,91 @@ local function placeBetweenLines(solution)
 
     local function cellKey(r, c) return r * 100 + c end
 
-    local target_count = math.random(4, 6)
-    local attempts     = 0
-    local max_attempts = 300
+    -- Even with all 8 directions available, uniformly-random start-cell
+    -- placement still favors the grid's center: any bounded-length path
+    -- dropped at a random position/orientation in a bounded grid is more
+    -- likely to fit (not go out of bounds) the closer its start is to the
+    -- center -- a general geometric effect, not specific to this game.
+    -- Since the target count (4-6) never exceeds the 9 boxes, assign
+    -- each line to its own shuffled box up front and require its start
+    -- cell to land there -- this guarantees real spread rather than
+    -- merely nudging the odds (a soft inverse-touch-count bias was tried
+    -- and found too weak: a start cell biased toward a corner box still
+    -- mostly extends its path *into* the center anyway).
+    local box_order = {}
+    for br = 1, 3 do for bc = 1, 3 do box_order[#box_order + 1] = { br = br, bc = bc } end end
+    for i = #box_order, 2, -1 do
+        local j = math.random(i)
+        box_order[i], box_order[j] = box_order[j], box_order[i]
+    end
 
-    while #lines < target_count and attempts < max_attempts do
-        attempts = attempts + 1
+    local function randomCellInBox(box)
+        local row_in_box = math.random(0, 2)
+        local col_in_box = math.random(0, 2)
+        return (box.br - 1) * 3 + row_in_box + 1, (box.bc - 1) * 3 + col_in_box + 1
+    end
 
-        -- Pick random start cell
-        local sr = math.random(1, n)
-        local sc = math.random(1, n)
-        if cell_used[cellKey(sr, sc)] then goto continue end
+    -- Try to place one line with its start cell restricted to `box` (nil
+    -- = anywhere). Returns true and appends to `lines` on success.
+    local function tryPlaceOne(box)
+        local sr, sc
+        if box then
+            sr, sc = randomCellInBox(box)
+        else
+            sr, sc = math.random(1, n), math.random(1, n)
+        end
+        if cell_used[cellKey(sr, sc)] then return false end
 
-        -- Pick random direction and total length (2 midpoints = length 4)
         local dir    = directions[math.random(#directions)]
         local length = math.random(4, 5)  -- total cells including both endpoints
 
         local path = { { r = sr, c = sc } }
-        local valid = true
         for i = 1, length - 1 do
             local nr = sr + dir.dr * i
             local nc = sc + dir.dc * i
-            if nr < 1 or nr > n or nc < 1 or nc > n then
-                valid = false
-                break
-            end
-            if cell_used[cellKey(nr, nc)] then
-                valid = false
-                break
-            end
+            if nr < 1 or nr > n or nc < 1 or nc > n then return false end
+            if cell_used[cellKey(nr, nc)] then return false end
             path[#path + 1] = { r = nr, c = nc }
         end
-        if not valid or #path < 4 then goto continue end
+        if #path < 4 then return false end
 
         -- Check: endpoints must have different values
         local v_start = solution[path[1].r][path[1].c]
         local v_end   = solution[path[#path].r][path[#path].c]
-        if v_start == v_end then goto continue end
+        if v_start == v_end then return false end
 
         -- Check: all intermediate values must be strictly between the endpoint values
         local lo = math.min(v_start, v_end)
         local hi = math.max(v_start, v_end)
-        local midpoints_ok = true
         for i = 2, #path - 1 do
             local v = solution[path[i].r][path[i].c]
-            if v <= lo or v >= hi then
-                midpoints_ok = false
-                break
-            end
+            if v <= lo or v >= hi then return false end
         end
-        if not midpoints_ok then goto continue end
 
-        -- Mark cells as used and store line
         for _, cell in ipairs(path) do
             cell_used[cellKey(cell.r, cell.c)] = true
         end
         lines[#lines + 1] = { cells = path }
+        return true
+    end
 
-        ::continue::
+    local target_count = math.random(4, 6)
+    local box_sub_attempts = 250
+
+    for i = 1, target_count do
+        local box = box_order[i]
+        local placed = false
+        for _ = 1, box_sub_attempts do
+            if tryPlaceOne(box) then placed = true; break end
+        end
+        if not placed then
+            -- This box couldn't fit one (rare -- e.g. heavily used by
+            -- earlier lines); fall back to a free placement anywhere so
+            -- the target count is still reached.
+            for _ = 1, box_sub_attempts * 2 do
+                if tryPlaceOne(nil) then break end
+            end
+        end
     end
 
     return lines
