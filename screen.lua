@@ -32,7 +32,9 @@ local BetweenLinesBoardWidget = lrequire("board_widget")
 
 local common            = lrequire_common("base_screen")
 local BaseScreen        = common.BaseScreen
-local DIFFICULTY_ORDER  = common.DIFFICULTY_ORDER
+-- Between Lines only ships 3 difficulty levels (no "expert") -- override the
+-- shared 4-level default rather than pulling it from common.
+local DIFFICULTY_ORDER  = { "easy", "medium", "hard" }
 local DIFFICULTY_LABELS = common.DIFFICULTY_LABELS
 
 local DeviceScreen = Device.screen
