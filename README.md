@@ -4,7 +4,7 @@ A Between Lines Sudoku plugin for [KOReader](https://github.com/koreader/koreade
 
 ## Screenshot
 
-*(Screenshot to be added.)*
+![Screenshot](images/between-lines-sudoku.png)
 
 ## Rules
 
