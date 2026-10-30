@@ -2,5 +2,5 @@ local _ = require("gettext")
 return {
     fullname    = _("Between Lines Sudoku"),
     description = _("Sudoku with between-lines constraints"),
-    version     = "1.3.1",
+    version     = "1.4.0",
 }
