@@ -25,6 +25,7 @@ local BetweenLinesBoardWidget = lrequire("board_widget")
 
 local common            = lrequire_common("base_screen")
 local BaseScreen        = common.BaseScreen
+local generateWithProgress = common.generateWithProgress
 -- Between Lines only ships 3 difficulty levels (no "expert") -- override the
 -- shared 4-level default rather than pulling it from common.
 local DIFFICULTY_ORDER  = { "easy", "medium", "hard" }
@@ -89,7 +90,7 @@ function BetweenLinesScreen:openDifficultyMenu()
     local menu
     local function selectDifficulty(level)
         if level ~= self.board.difficulty then
-            self.board:generate(level)
+            generateWithProgress(self.board, level)
             self.plugin:saveState()
             self.board_widget:refresh()
             self:ensureShowButtonState()
