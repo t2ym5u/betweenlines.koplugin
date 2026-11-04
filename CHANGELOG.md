@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.6.0] - 2026-11-04
+
+### Added
+- "Generating puzzle…" progress bar on the first game, New game and a
+  difficulty change, like the other sudoku variants, for the rare grid that
+  takes a moment on an e-reader.
+
+### Changed
+- New games are generated faster, with the same puzzles: Hard worst case on
+  a desktop 21 → 9 ms.
+- Shared sudoku-common 1.6.0: the deduction check behind every clue the
+  generator digs out runs about twice as fast, with exactly the same
+  deductions, so a given seed still deals the same puzzle.
+
 ## [1.5.0] - 2026-11-02
 
 ### Changed

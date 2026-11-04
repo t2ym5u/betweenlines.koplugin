@@ -26,6 +26,7 @@ require("i18n").extend(lrequire("i18n_fr"))
 local board_module          = lrequire("board")
 local BetweenLinesBoard     = board_module.BetweenLinesBoard
 local DEFAULT_DIFFICULTY    = board_module.DEFAULT_DIFFICULTY
+local generateWithProgress  = lrequire("common/base_screen").generateWithProgress
 
 local BetweenLinesScreen = lrequire("screen")
 
@@ -79,7 +80,7 @@ function BetweenLines:getBoard()
         self.board = BetweenLinesBoard:new()
         local state = self.settings:readSetting("state")
         if not self.board:load(state) then
-            self.board:generate(DEFAULT_DIFFICULTY)
+            generateWithProgress(self.board, DEFAULT_DIFFICULTY)
         end
     end
     return self.board
